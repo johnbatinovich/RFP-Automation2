@@ -11,14 +11,14 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  let user: User | null = null;
-
-  try {
-    user = await sdk.authenticateRequest(opts.req);
-  } catch (error) {
-    // Authentication is optional for public procedures.
-    user = null;
-  }
+  // Bypass authentication for demo/POC - create a mock user
+  const user: User = {
+    id: "demo-user-001",
+    name: "Demo User",
+    email: "demo@rfpautomation.com",
+    loginMethod: "demo",
+    lastSignedIn: new Date(),
+  };
 
   return {
     req: opts.req,
