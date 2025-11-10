@@ -40,58 +40,67 @@ async function initDatabase() {
 
     const connection = await mysql.default.createConnection(DATABASE_URL);
 
-    // Create tables
+    // Create tables matching Drizzle schema exactly
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS rfps (
-        id VARCHAR(255) PRIMARY KEY,
-        title VARCHAR(500) NOT NULL,
-        company VARCHAR(255),
-        dueDate DATETIME,
-        value VARCHAR(100),
-        status VARCHAR(50) DEFAULT 'new',
+        id VARCHAR(64) PRIMARY KEY,
+        title TEXT NOT NULL,
+        company VARCHAR(255) NOT NULL,
+        dueDate TIMESTAMP NOT NULL,
+        value VARCHAR(50),
+        status ENUM('new', 'in_progress', 'under_review', 'completed') DEFAULT 'new' NOT NULL,
         progress VARCHAR(10) DEFAULT '0',
         owner VARCHAR(255),
+        rfpDocumentUrl TEXT,
+        rfpDocumentName VARCHAR(255),
         extractedQuestions TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
     console.log("✓ Created rfps table");
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS proposals (
-        id VARCHAR(255) PRIMARY KEY,
-        rfpId VARCHAR(255) NOT NULL,
+        id VARCHAR(64) PRIMARY KEY,
+        rfpId VARCHAR(64) NOT NULL,
         content TEXT,
-        status VARCHAR(50) DEFAULT 'draft',
-        qualityScore INT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (rfpId) REFERENCES rfps(id)
+        qualityScore VARCHAR(10),
+        completeness VARCHAR(10),
+        relevance VARCHAR(10),
+        clarity VARCHAR(10),
+        competitiveDiff VARCHAR(10),
+        alignment VARCHAR(10),
+        improvementSuggestion TEXT,
+        status ENUM('draft', 'pending_review', 'approved', 'sent') DEFAULT 'draft' NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
     console.log("✓ Created proposals table");
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS teamMembers (
-        id VARCHAR(255) PRIMARY KEY,
+        id VARCHAR(64) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        role VARCHAR(255),
-        email VARCHAR(255),
-        status VARCHAR(50) DEFAULT 'offline',
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        role VARCHAR(100) NOT NULL,
+        email VARCHAR(320),
+        status ENUM('online', 'offline', 'away') DEFAULT 'offline' NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log("✓ Created teamMembers table");
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS knowledgeBase (
-        id VARCHAR(255) PRIMARY KEY,
-        title VARCHAR(500) NOT NULL,
-        category VARCHAR(100),
+        id VARCHAR(64) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        category ENUM('audience_data', 'ad_formats', 'pricing', 'case_studies') NOT NULL,
         content TEXT,
-        fileUrl VARCHAR(500),
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        fileUrl TEXT,
+        fileType VARCHAR(100),
+        fileSize INT,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
     console.log("✓ Created knowledgeBase table");
@@ -105,9 +114,9 @@ async function initDatabase() {
       
       await connection.execute(`
         INSERT INTO rfps (id, title, company, dueDate, value, status, progress, owner, createdAt, updatedAt) VALUES
-        ('rfp-001', 'Q3 Digital Media Campaign RFP', 'MediaBuyers Agency', '2025-04-15 00:00:00', '$1.2M', 'in_progress', '72', 'John Davis', NOW(), NOW()),
-        ('rfp-002', 'Summer Multichannel Campaign RFP', 'BrandMax Advertising', '2025-04-22 00:00:00', '$800K', 'under_review', '95', 'Sarah Johnson', NOW(), NOW()),
-        ('rfp-003', 'Product Launch Campaign RFP', 'TechCorp', '2025-05-05 00:00:00', '$1.5M', 'new', '15', 'Michael Chen', NOW(), NOW())
+        ('rfp-001', 'Q3 Digital Media Campaign RFP', 'MediaBuyers Agency', '2025-04-15 12:00:00', '1200000', 'in_progress', '72', 'John Davis', NOW(), NOW()),
+        ('rfp-002', 'Summer Multichannel Campaign RFP', 'BrandMax Advertising', '2025-04-22 12:00:00', '800000', 'under_review', '95', 'Sarah Johnson', NOW(), NOW()),
+        ('rfp-003', 'Product Launch Campaign RFP', 'TechCorp', '2025-05-05 12:00:00', '1500000', 'new', '15', 'Michael Chen', NOW(), NOW())
       `);
       console.log("✓ Inserted sample RFPs");
 
