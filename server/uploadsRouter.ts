@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { router, publicProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { randomUUID } from "crypto";
