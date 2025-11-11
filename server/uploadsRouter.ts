@@ -4,7 +4,7 @@ import * as db from "./db";
 import { randomUUID } from "crypto";
 
 export const uploadsRouter = router({
-  uploadKnowledgeBase: protectedProcedure
+  uploadKnowledgeBase: publicProcedure
     .input(z.object({
       title: z.string(),
       category: z.enum(["audience_data", "ad_formats", "pricing", "case_studies"]),
@@ -51,7 +51,7 @@ export const uploadsRouter = router({
       }
     }),
 
-  uploadRFPDocument: protectedProcedure
+  uploadRFPDocument: publicProcedure
     .input(z.object({
       rfpId: z.string(),
       fileData: z.string(), // base64 encoded file

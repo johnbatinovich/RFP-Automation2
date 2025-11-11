@@ -34,7 +34,7 @@ export const appRouter = router({
         return await db.getRFPById(input.id);
       }),
     
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         title: z.string(),
         company: z.string(),
