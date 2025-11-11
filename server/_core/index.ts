@@ -40,6 +40,16 @@ async function initDatabase() {
 
     const connection = await mysql.default.createConnection(DATABASE_URL);
 
+    // Drop existing tables to ensure clean schema
+    console.log("Dropping existing tables if they exist...");
+    await connection.execute('DROP TABLE IF EXISTS rfpAssignments');
+    await connection.execute('DROP TABLE IF EXISTS analytics');
+    await connection.execute('DROP TABLE IF EXISTS proposals');
+    await connection.execute('DROP TABLE IF EXISTS knowledgeBase');
+    await connection.execute('DROP TABLE IF EXISTS teamMembers');
+    await connection.execute('DROP TABLE IF EXISTS rfps');
+    console.log("✓ Dropped old tables");
+
     // Create tables matching Drizzle schema exactly
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS rfps (
