@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 import { Search, Plus, FileText, Upload } from "lucide-react";
 import { ImportRFPDialog } from "@/components/ImportRFPDialog";
+import { NewRFPDialog } from "@/components/NewRFPDialog";
 import { useState } from "react";
 
 export default function RFPsList() {
@@ -64,10 +65,14 @@ export default function RFPsList() {
               </Button>
             }
           />
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New RFP
-          </Button>
+          <NewRFPDialog
+            trigger={
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New RFP
+              </Button>
+            }
+          />
         </div>
       </div>
 
