@@ -135,7 +135,7 @@ export function ImportRFPDialog({ trigger }: ImportRFPDialogProps) {
       <DialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Import RFP</DialogTitle>
+            <DialogTitle>Import Michael Grant</DialogTitle>
             <DialogDescription>
               Upload an RFP document and provide basic information
             </DialogDescription>
@@ -211,7 +211,7 @@ export function ImportRFPDialog({ trigger }: ImportRFPDialogProps) {
                   Importing...
                 </>
               ) : (
-                "Import RFP"
+                "Import Michael Grant"
               )}
             </Button>
           </DialogFooter>
