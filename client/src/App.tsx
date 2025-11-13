@@ -12,6 +12,7 @@ import ProposalGenerator from "./pages/ProposalGenerator";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import TeamCollaboration from "./pages/TeamCollaboration";
 
 function Router() {
   return (
@@ -26,7 +27,7 @@ function Router() {
         <Route path={"/ai/analyzer"} component={() => <div>RFP Analyzer - Coming Soon</div>} />
         <Route path={"/ai/generator"} component={ProposalGenerator} />
         <Route path={"/ai/quality"} component={() => <div>Quality Checker - Coming Soon</div>} />
-        <Route path={"/ai/collaboration"} component={() => <div>Team Collaboration - Coming Soon</div>} />
+        <Route path={"/ai/collaboration"} component={TeamCollaboration} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

@@ -103,3 +103,79 @@ export const analytics = mysqlTable("analytics", {
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = typeof analytics.$inferInsert;
 
+
+// Team Collaboration Tables
+export const tasks = mysqlTable("tasks", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  rfpId: varchar("rfpId", { length: 64 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  assignedTo: varchar("assignedTo", { length: 64 }),
+  status: mysqlEnum("status", ["todo", "in_progress", "review", "completed"]).default("todo").notNull(),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium").notNull(),
+  dueDate: timestamp("dueDate"),
+  createdBy: varchar("createdBy", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+
+export const comments = mysqlTable("comments", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  rfpId: varchar("rfpId", { length: 64 }).notNull(),
+  taskId: varchar("taskId", { length: 64 }),
+  authorId: varchar("authorId", { length: 64 }).notNull(),
+  authorName: varchar("authorName", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  parentId: varchar("parentId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+
+export const activities = mysqlTable("activities", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  rfpId: varchar("rfpId", { length: 64 }),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  userName: varchar("userName", { length: 255 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = typeof activities.$inferInsert;
+
+export const notifications = mysqlTable("notifications", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: mysqlEnum("type", ["info", "success", "warning", "error"]).default("info").notNull(),
+  isRead: mysqlEnum("isRead", ["yes", "no"]).default("no").notNull(),
+  link: varchar("link", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+export const sharedFiles = mysqlTable("sharedFiles", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  rfpId: varchar("rfpId", { length: 64 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileType: varchar("fileType", { length: 100 }),
+  fileSize: int("fileSize"),
+  uploadedBy: varchar("uploadedBy", { length: 64 }).notNull(),
+  uploadedByName: varchar("uploadedByName", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export type SharedFile = typeof sharedFiles.$inferSelect;
+export type InsertSharedFile = typeof sharedFiles.$inferInsert;

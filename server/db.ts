@@ -186,3 +186,166 @@ export async function createAnalytics(data: InsertAnalytics) {
   await db.insert(analytics).values(data);
   return data;
 }
+
+// Team Collaboration Queries
+import { activities, comments, InsertActivity, InsertComment, InsertNotification, InsertSharedFile, InsertTask, notifications, sharedFiles, tasks } from "../drizzle/schema";
+
+// Team Members
+export async function getTeamMembers() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(teamMembers).orderBy(desc(teamMembers.createdAt));
+}
+
+export async function getTeamMemberById(id: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(teamMembers).where(eq(teamMembers.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createTeamMember(data: InsertTeamMember) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(teamMembers).values(data);
+  return data;
+}
+
+export async function updateTeamMember(id: string, data: Partial<InsertTeamMember>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(teamMembers).set(data).where(eq(teamMembers.id, id));
+}
+
+export async function deleteTeamMember(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(teamMembers).where(eq(teamMembers.id, id));
+}
+
+// Tasks
+export async function getTasks(rfpId?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (rfpId) {
+    return await db.select().from(tasks).where(eq(tasks.rfpId, rfpId)).orderBy(desc(tasks.createdAt));
+  }
+  return await db.select().from(tasks).orderBy(desc(tasks.createdAt));
+}
+
+export async function createTask(data: InsertTask) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(tasks).values(data);
+  return data;
+}
+
+export async function updateTask(id: string, data: Partial<InsertTask>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(tasks).set({ ...data, updatedAt: new Date() }).where(eq(tasks.id, id));
+}
+
+export async function deleteTask(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(tasks).where(eq(tasks.id, id));
+}
+
+// Comments
+export async function getComments(rfpId?: string, taskId?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (taskId) {
+    return await db.select().from(comments).where(eq(comments.taskId, taskId)).orderBy(desc(comments.createdAt));
+  }
+  if (rfpId) {
+    return await db.select().from(comments).where(eq(comments.rfpId, rfpId)).orderBy(desc(comments.createdAt));
+  }
+  return await db.select().from(comments).orderBy(desc(comments.createdAt));
+}
+
+export async function createComment(data: InsertComment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(comments).values(data);
+  return data;
+}
+
+export async function deleteComment(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(comments).where(eq(comments.id, id));
+}
+
+// Activities
+export async function getActivities(rfpId?: string, limit?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(activities);
+  
+  if (rfpId) {
+    query = query.where(eq(activities.rfpId, rfpId)) as any;
+  }
+  
+  query = query.orderBy(desc(activities.createdAt)) as any;
+  
+  if (limit) {
+    query = query.limit(limit) as any;
+  }
+  
+  return await query;
+}
+
+export async function createActivity(data: InsertActivity) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(activities).values(data);
+  return data;
+}
+
+// Notifications
+export async function getNotifications(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt));
+}
+
+export async function createNotification(data: InsertNotification) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(notifications).values(data);
+  return data;
+}
+
+export async function markNotificationRead(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(notifications).set({ isRead: "yes" }).where(eq(notifications.id, id));
+}
+
+// Shared Files
+export async function getSharedFiles(rfpId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(sharedFiles)
+    .where(eq(sharedFiles.rfpId, rfpId))
+    .orderBy(desc(sharedFiles.createdAt));
+}
+
+export async function createSharedFile(data: InsertSharedFile) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(sharedFiles).values(data);
+  return data;
+}
+
+export async function deleteSharedFile(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(sharedFiles).where(eq(sharedFiles.id, id));
+}

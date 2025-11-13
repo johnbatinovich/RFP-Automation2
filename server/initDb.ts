@@ -74,6 +74,89 @@ async function initDatabase() {
     `);
     console.log("✓ Created knowledgeBase table");
 
+    // Create tasks table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id VARCHAR(255) PRIMARY KEY,
+        rfpId VARCHAR(255) NOT NULL,
+        title VARCHAR(500) NOT NULL,
+        description TEXT,
+        assignedTo VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'todo',
+        priority VARCHAR(50) DEFAULT 'medium',
+        dueDate DATETIME,
+        createdBy VARCHAR(255),
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (rfpId) REFERENCES rfps(id)
+      )
+    `);
+    console.log("✓ Created tasks table");
+
+    // Create comments table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id VARCHAR(255) PRIMARY KEY,
+        rfpId VARCHAR(255) NOT NULL,
+        taskId VARCHAR(255),
+        authorId VARCHAR(255) NOT NULL,
+        authorName VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        parentId VARCHAR(255),
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (rfpId) REFERENCES rfps(id)
+      )
+    `);
+    console.log("✓ Created comments table");
+
+    // Create activities table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS activities (
+        id VARCHAR(255) PRIMARY KEY,
+        rfpId VARCHAR(255),
+        userId VARCHAR(255) NOT NULL,
+        userName VARCHAR(255) NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        description TEXT NOT NULL,
+        metadata TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✓ Created activities table");
+
+    // Create notifications table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id VARCHAR(255) PRIMARY KEY,
+        userId VARCHAR(255) NOT NULL,
+        title VARCHAR(500) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'info',
+        isRead VARCHAR(10) DEFAULT 'no',
+        link VARCHAR(500),
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✓ Created notifications table");
+
+    // Create sharedFiles table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS sharedFiles (
+        id VARCHAR(255) PRIMARY KEY,
+        rfpId VARCHAR(255) NOT NULL,
+        fileName VARCHAR(500) NOT NULL,
+        fileUrl TEXT NOT NULL,
+        fileType VARCHAR(100),
+        fileSize INT,
+        uploadedBy VARCHAR(255) NOT NULL,
+        uploadedByName VARCHAR(255) NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (rfpId) REFERENCES rfps(id)
+      )
+    `);
+    console.log("✓ Created sharedFiles table");
+
     // Insert sample data if tables are empty
     const [rfpsCount] = await connection.execute('SELECT COUNT(*) as count FROM rfps');
     const count = (rfpsCount as any)[0].count;

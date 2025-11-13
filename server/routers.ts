@@ -8,6 +8,7 @@ import { randomUUID } from "crypto";
 import { aiRouter } from "./aiRouter";
 import { uploadsRouter } from "./uploadsRouter";
 import { dynamics365Router } from "./dynamics365Router";
+import { teamRouter } from "./teamRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -251,6 +252,9 @@ Media Sales Team`;
 
   // Dynamics 365 CRM integration
   dynamics365: dynamics365Router,
+
+  // Team Collaboration
+  team: teamRouter,
 });
 
 export type AppRouter = typeof appRouter;
