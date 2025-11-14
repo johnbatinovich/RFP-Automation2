@@ -25,7 +25,9 @@ import {
   Download,
   Sparkles,
   FileText,
-  ListChecks
+  ListChecks,
+  Upload,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -33,6 +35,9 @@ export default function RFPAnalyzer() {
   const [selectedRfpId, setSelectedRfpId] = useState<string>("select");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedContent, setUploadedContent] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: rfps } = trpc.rfps.list.useQuery();
   const { data: selectedRFP } = trpc.rfps.getById.useQuery(
@@ -55,6 +60,44 @@ export default function RFPAnalyzer() {
       setIsAnalyzing(false);
     },
   });
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadedFile(file);
+    setIsUploading(true);
+
+    try {
+      const text = await file.text();
+      setUploadedContent(text);
+      toast.success(`File "${file.name}" uploaded successfully`);
+    } catch (error) {
+      toast.error("Failed to read file");
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setUploadedContent("");
+    setAnalysisResult("");
+  };
+
+  const handleAnalyzeUploadedFile = async () => {
+    if (!uploadedFile || !uploadedContent) {
+      toast.error("Please upload a file first");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    analyzeDocument.mutate({
+      rfpId: "uploaded",
+      content: uploadedContent,
+    });
+  };
 
   const handleAnalyze = async () => {
     if (selectedRfpId === "select") {
@@ -143,47 +186,131 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
         </div>
       </div>
 
-      {/* RFP Selector */}
+      {/* RFP Selector with Upload Option */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Select value={selectedRfpId} onValueChange={setSelectedRfpId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an RFP to analyze" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="select">Select an RFP</SelectItem>
-                  {rfps?.map((rfp) => (
-                    <SelectItem key={rfp.id} value={rfp.id}>
-                      {rfp.title} - {rfp.company}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={handleAnalyze}
-              disabled={selectedRfpId === "select" || isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
+          <Tabs defaultValue="existing" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="existing">Existing RFP</TabsTrigger>
+              <TabsTrigger value="upload">Upload Document</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="existing" className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Select value={selectedRfpId} onValueChange={(value) => {
+                    setSelectedRfpId(value);
+                    setUploadedFile(null);
+                    setUploadedContent("");
+                    setAnalysisResult("");
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an RFP to analyze" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="select">Select an RFP</SelectItem>
+                      {rfps?.map((rfp) => (
+                        <SelectItem key={rfp.id} value={rfp.id}>
+                          {rfp.title} - {rfp.company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={selectedRfpId === "select" || isAnalyzing}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Analyze RFP
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="upload" className="space-y-4">
+              {!uploadedFile ? (
+                <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">Upload RFP Document</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upload a text file (.txt, .md) containing the RFP content for analysis
+                  </p>
+                  <label htmlFor="rfp-upload" className="cursor-pointer">
+                    <Button asChild disabled={isUploading}>
+                      <span>
+                        {isUploading ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Choose File
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
+                  <input
+                    id="rfp-upload"
+                    type="file"
+                    accept=".txt,.md,.text"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
               ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Analyze RFP
-                </>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium">{uploadedFile.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(uploadedFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleAnalyzeUploadedFile}
+                    disabled={isAnalyzing}
+                    className="w-full"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Analyze Uploaded Document
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
-            </Button>
-          </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
       {/* No Selection State */}
-      {selectedRfpId === "select" && (
+      {selectedRfpId === "select" && !uploadedFile && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">
@@ -191,7 +318,7 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
               <div>
                 <h3 className="font-semibold text-lg">No RFP Selected</h3>
                 <p className="text-muted-foreground mt-1">
-                  Select an RFP from the dropdown above to analyze its requirements and get strategic insights
+                  Select an existing RFP or upload a document to analyze its requirements and get strategic insights
                 </p>
               </div>
             </div>
