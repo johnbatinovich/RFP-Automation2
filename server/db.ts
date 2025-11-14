@@ -190,25 +190,12 @@ export async function createAnalytics(data: InsertAnalytics) {
 // Team Collaboration Queries
 import { activities, comments, InsertActivity, InsertComment, InsertNotification, InsertSharedFile, InsertTask, notifications, sharedFiles, tasks } from "../drizzle/schema";
 
-// Team Members
-export async function getTeamMembers() {
-  const db = await getDb();
-  if (!db) return [];
-  return await db.select().from(teamMembers).orderBy(desc(teamMembers.createdAt));
-}
-
+// Team Members (use existing getTeamMembers and createTeamMember functions above)
 export async function getTeamMemberById(id: string) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.select().from(teamMembers).where(eq(teamMembers.id, id)).limit(1);
   return result.length > 0 ? result[0] : null;
-}
-
-export async function createTeamMember(data: InsertTeamMember) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.insert(teamMembers).values(data);
-  return data;
 }
 
 export async function updateTeamMember(id: string, data: Partial<InsertTeamMember>) {

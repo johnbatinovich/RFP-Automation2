@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 export const teamRouter = router({
   // Team Members
   listMembers: publicProcedure.query(async () => {
-    return await db.getTeamMembers();
+    return await db.getAllTeamMembers();
   }),
 
   getMember: publicProcedure
