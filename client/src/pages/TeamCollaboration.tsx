@@ -32,13 +32,13 @@ import { format } from "date-fns";
 
 export default function TeamCollaboration() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [selectedRFP, setSelectedRFP] = useState<string>("");
+  const [selectedRFP, setSelectedRFP] = useState<string>("all");
   
   const { data: rfps } = trpc.rfps.list.useQuery();
   const { data: teamMembers } = trpc.team.listMembers.useQuery();
-  const { data: tasks } = trpc.team.listTasks.useQuery({ rfpId: selectedRFP || undefined });
-  const { data: activities } = trpc.team.listActivities.useQuery({ rfpId: selectedRFP || undefined, limit: 20 });
-  const { data: comments } = trpc.team.listComments.useQuery({ rfpId: selectedRFP || undefined });
+  const { data: tasks } = trpc.team.listTasks.useQuery({ rfpId: selectedRFP === "all" ? undefined : selectedRFP });
+  const { data: activities } = trpc.team.listActivities.useQuery({ rfpId: selectedRFP === "all" ? undefined : selectedRFP, limit: 20 });
+  const { data: comments } = trpc.team.listComments.useQuery({ rfpId: selectedRFP === "all" ? undefined : selectedRFP });
 
   return (
     <div className="space-y-6">
@@ -65,7 +65,7 @@ export default function TeamCollaboration() {
                 <SelectValue placeholder="All RFPs" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All RFPs</SelectItem>
+                <SelectItem value="all">All RFPs</SelectItem>
                 {rfps?.map((rfp) => (
                   <SelectItem key={rfp.id} value={rfp.id}>
                     {rfp.title}
@@ -401,7 +401,7 @@ function AddTaskDialog({ rfpId }: { rfpId: string }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedTo, setAssignedTo] = useState("unassigned");
 
   const { data: members } = trpc.team.listMembers.useQuery();
   const utils = trpc.useUtils();
@@ -415,7 +415,7 @@ function AddTaskDialog({ rfpId }: { rfpId: string }) {
       setTitle("");
       setDescription("");
       setPriority("medium");
-      setAssignedTo("");
+      setAssignedTo("unassigned");
     },
     onError: () => {
       toast.error("Failed to create task");
@@ -433,7 +433,7 @@ function AddTaskDialog({ rfpId }: { rfpId: string }) {
       title,
       description,
       priority,
-      assignedTo: assignedTo || undefined,
+      assignedTo: assignedTo === "unassigned" ? undefined : assignedTo,
       createdBy: "current-user",
     });
   };
@@ -495,7 +495,7 @@ function AddTaskDialog({ rfpId }: { rfpId: string }) {
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {members?.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}
