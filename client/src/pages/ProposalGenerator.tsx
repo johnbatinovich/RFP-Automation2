@@ -5,6 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Send, FileText, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -12,7 +14,9 @@ import { toast } from "sonner";
 export default function ProposalGenerator() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const rfpId = searchParams.get("rfpId") || "";
+  const urlRfpId = searchParams.get("rfpId") || "";
+  const [selectedRfpId, setSelectedRfpId] = useState(urlRfpId || "select");
+  const rfpId = selectedRfpId === "select" ? "" : selectedRfpId;
 
   const [content, setContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -20,6 +24,7 @@ export default function ProposalGenerator() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
+  const { data: rfps } = trpc.rfps.list.useQuery();
   const { data: rfp } = trpc.rfps.getById.useQuery({ id: rfpId }, { enabled: !!rfpId });
   const { data: proposal, refetch: refetchProposal } = trpc.proposals.getByRFPId.useQuery(
     { rfpId },
@@ -39,6 +44,21 @@ export default function ProposalGenerator() {
       setContent(proposal.content);
     }
   }, [proposal]);
+
+  // Update selected RFP when URL changes
+  useEffect(() => {
+    if (urlRfpId && urlRfpId !== selectedRfpId) {
+      setSelectedRfpId(urlRfpId);
+    }
+  }, [urlRfpId]);
+
+  // Update URL when RFP selection changes
+  const handleRfpChange = (newRfpId: string) => {
+    setSelectedRfpId(newRfpId);
+    if (newRfpId !== "select") {
+      setLocation(`/ai/generator?rfpId=${newRfpId}`);
+    }
+  };
 
   const handleAnalyzeDocument = async () => {
     if (!rfp) return;
@@ -203,17 +223,11 @@ Media Sales Team`;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => setLocation(`/rfps/${rfpId}`)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to RFP
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">AI-Powered RFP Assistant</h1>
-            <p className="text-muted-foreground mt-1">
-              Generate and edit proposal for: {rfp?.title}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">AI-Powered RFP Assistant</h1>
+          <p className="text-muted-foreground mt-1">
+            Generate and edit proposal for: {rfp?.title || "Select an RFP to begin"}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
@@ -227,6 +241,45 @@ Media Sales Team`;
         </div>
       </div>
 
+      {/* RFP Selector */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <Label htmlFor="rfp-select" className="whitespace-nowrap font-semibold">Select RFP:</Label>
+            <Select value={selectedRfpId} onValueChange={handleRfpChange}>
+              <SelectTrigger id="rfp-select" className="flex-1">
+                <SelectValue placeholder="Choose an RFP to generate a proposal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="select">Choose an RFP</SelectItem>
+                {rfps?.map((rfp) => (
+                  <SelectItem key={rfp.id} value={rfp.id}>
+                    {rfp.title} - {rfp.company}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedRfpId === "select" && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <FileText className="h-16 w-16 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="font-semibold text-lg">No RFP Selected</h3>
+                <p className="text-muted-foreground mt-1">
+                  Select an RFP from the dropdown above to generate and edit a proposal
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedRfpId !== "select" && (
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <Card>
@@ -457,6 +510,7 @@ Media Sales Team`;
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 }
