@@ -4,7 +4,7 @@ import * as db from "./db";
 import { randomUUID } from "crypto";
 
 export const aiRouter = router({
-  analyzeDocument: protectedProcedure
+  analyzeDocument: publicProcedure
     .input(z.object({
       rfpId: z.string(),
       content: z.string(),
@@ -51,7 +51,7 @@ Provide the analysis in a clear, structured format.`
       }
     }),
 
-  extractQuestions: protectedProcedure
+  extractQuestions: publicProcedure
     .input(z.object({
       rfpId: z.string(),
       rfpContent: z.string(),
@@ -138,7 +138,7 @@ Return a JSON array of questions with the following structure:
       }
     }),
 
-  generateResponses: protectedProcedure
+  generateResponses: publicProcedure
     .input(z.object({
       rfpId: z.string(),
       questions: z.array(z.object({
@@ -228,7 +228,7 @@ Return a JSON object with responses:
       }
     }),
 
-  qualityCheck: protectedProcedure
+  qualityCheck: publicProcedure
     .input(z.object({
       proposalId: z.string(),
       content: z.string(),
