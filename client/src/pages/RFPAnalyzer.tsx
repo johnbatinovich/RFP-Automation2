@@ -61,6 +61,31 @@ export default function RFPAnalyzer() {
     },
   });
 
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    return fullText;
+  };
+
+  const extractTextFromDOCX = async (file: File): Promise<string> => {
+    const mammoth = await import('mammoth');
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -69,12 +94,24 @@ export default function RFPAnalyzer() {
     setIsUploading(true);
 
     try {
-      const text = await file.text();
+      let text = '';
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (fileExtension === 'pdf') {
+        text = await extractTextFromPDF(file);
+      } else if (fileExtension === 'docx') {
+        text = await extractTextFromDOCX(file);
+      } else {
+        // Plain text files
+        text = await file.text();
+      }
+      
       setUploadedContent(text);
-      toast.success(`File "${file.name}" uploaded successfully`);
+      toast.success(`File "${file.name}" uploaded and processed successfully`);
     } catch (error) {
-      toast.error("Failed to read file");
+      toast.error("Failed to read file: " + (error as Error).message);
       console.error(error);
+      setUploadedFile(null);
     } finally {
       setIsUploading(false);
     }
@@ -242,7 +279,7 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
                   <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="font-semibold text-lg mb-2">Upload RFP Document</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Upload a text file (.txt, .md) containing the RFP content for analysis
+                    Upload an RFP document (.pdf, .docx, .txt, .md) for AI-powered analysis
                   </p>
                   <label htmlFor="rfp-upload" className="cursor-pointer">
                     <Button asChild disabled={isUploading}>
@@ -264,7 +301,7 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
                   <input
                     id="rfp-upload"
                     type="file"
-                    accept=".txt,.md,.text"
+                    accept=".txt,.md,.text,.pdf,.docx"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
