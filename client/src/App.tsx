@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import TeamCollaboration from "./pages/TeamCollaboration";
 import QualityChecker from "./pages/QualityChecker";
+import RFPAnalyzer from "./pages/RFPAnalyzer";
 
 function Router() {
   return (
@@ -25,7 +26,7 @@ function Router() {
         <Route path={"/knowledge-base"} component={KnowledgeBase} />
         <Route path={"/analytics"} component={Analytics} />
         <Route path={"/settings"} component={Settings} />
-        <Route path={"/ai/analyzer"} component={() => <div>RFP Analyzer - Coming Soon</div>} />
+        <Route path={"/ai/analyzer"} component={RFPAnalyzer} />
         <Route path={"/ai/generator"} component={ProposalGenerator} />
         <Route path={"/ai/quality"} component={QualityChecker} />
         <Route path={"/ai/collaboration"} component={TeamCollaboration} />

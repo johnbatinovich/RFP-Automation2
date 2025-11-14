@@ -1,0 +1,526 @@
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
+import {
+  FileSearch,
+  Calendar,
+  DollarSign,
+  Target,
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
+  Users,
+  Briefcase,
+  Clock,
+  Award,
+  Lightbulb,
+  BarChart3,
+  RefreshCw,
+  Download,
+  Sparkles,
+  FileText,
+  ListChecks
+} from "lucide-react";
+import { format } from "date-fns";
+
+export default function RFPAnalyzer() {
+  const [selectedRfpId, setSelectedRfpId] = useState<string>("select");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string>("");
+
+  const { data: rfps } = trpc.rfps.list.useQuery();
+  const { data: selectedRFP } = trpc.rfps.getById.useQuery(
+    { id: selectedRfpId },
+    { enabled: selectedRfpId !== "select" }
+  );
+
+  const analyzeDocument = trpc.ai.analyzeDocument.useMutation({
+    onSuccess: (result) => {
+      if (result.success && result.analysis) {
+        setAnalysisResult(result.analysis);
+        toast.success("Analysis complete!");
+      } else {
+        toast.error(result.error || "Analysis failed");
+      }
+      setIsAnalyzing(false);
+    },
+    onError: (error) => {
+      toast.error("Analysis failed: " + error.message);
+      setIsAnalyzing(false);
+    },
+  });
+
+  const handleAnalyze = async () => {
+    if (selectedRfpId === "select") {
+      toast.error("Please select an RFP first");
+      return;
+    }
+
+    if (!selectedRFP) {
+      toast.error("RFP not found");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    const content = `
+Title: ${selectedRFP.title}
+Company: ${selectedRFP.company}
+Due Date: ${selectedRFP.dueDate ? format(new Date(selectedRFP.dueDate), "MMMM dd, yyyy") : "Not specified"}
+Value: ${selectedRFP.value || "Not specified"}
+Status: ${selectedRFP.status}
+Owner: ${selectedRFP.owner || "Not assigned"}
+
+Additional Context:
+This is a media advertising RFP that requires a comprehensive proposal covering campaign strategy, media mix, audience targeting, pricing, and timeline.
+    `.trim();
+
+    analyzeDocument.mutate({
+      rfpId: selectedRfpId,
+      content,
+    });
+  };
+
+  const parseAnalysis = (analysis: string) => {
+    const sections = {
+      requirements: [] as string[],
+      criteria: [] as string[],
+      audience: [] as string[],
+      metrics: [] as string[],
+      insights: [] as string[],
+    };
+
+    const lines = analysis.split('\n');
+    let currentSection = '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      if (trimmed.toLowerCase().includes('requirement')) {
+        currentSection = 'requirements';
+      } else if (trimmed.toLowerCase().includes('criteria') || trimmed.toLowerCase().includes('evaluation')) {
+        currentSection = 'criteria';
+      } else if (trimmed.toLowerCase().includes('audience') || trimmed.toLowerCase().includes('target')) {
+        currentSection = 'audience';
+      } else if (trimmed.toLowerCase().includes('metric') || trimmed.toLowerCase().includes('success')) {
+        currentSection = 'metrics';
+      } else if (trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.match(/^\d+\./)) {
+        const item = trimmed.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '');
+        if (currentSection && sections[currentSection as keyof typeof sections]) {
+          sections[currentSection as keyof typeof sections].push(item);
+        }
+      } else if (trimmed.length > 20 && !trimmed.endsWith(':')) {
+        sections.insights.push(trimmed);
+      }
+    }
+
+    return sections;
+  };
+
+  const analysis = analysisResult ? parseAnalysis(analysisResult) : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">RFP Analyzer</h1>
+          <p className="text-muted-foreground mt-1">
+            AI-powered analysis of RFP requirements and strategic insights
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" disabled={!analysisResult}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Analysis
+          </Button>
+        </div>
+      </div>
+
+      {/* RFP Selector */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Select value={selectedRfpId} onValueChange={setSelectedRfpId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an RFP to analyze" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="select">Select an RFP</SelectItem>
+                  {rfps?.map((rfp) => (
+                    <SelectItem key={rfp.id} value={rfp.id}>
+                      {rfp.title} - {rfp.company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleAnalyze}
+              disabled={selectedRfpId === "select" || isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analyze RFP
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* No Selection State */}
+      {selectedRfpId === "select" && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <FileSearch className="h-16 w-16 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="font-semibold text-lg">No RFP Selected</h3>
+                <p className="text-muted-foreground mt-1">
+                  Select an RFP from the dropdown above to analyze its requirements and get strategic insights
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* RFP Overview */}
+      {selectedRfpId !== "select" && selectedRFP && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Company</CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{selectedRFP.company}</div>
+                <p className="text-xs text-muted-foreground mt-1">Client organization</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Due Date</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {selectedRFP.dueDate ? format(new Date(selectedRFP.dueDate), "MMM dd") : "TBD"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedRFP.dueDate ? format(new Date(selectedRFP.dueDate), "yyyy") : "Not specified"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Value</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{selectedRFP.value || "N/A"}</div>
+                <p className="text-xs text-muted-foreground mt-1">Estimated budget</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Status</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <Badge>{selectedRFP.status?.replace("_", " ")}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Current stage</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Analysis Results */}
+          {!analysisResult && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Ready to Analyze</AlertTitle>
+              <AlertDescription>
+                Click "Analyze RFP" to get AI-powered insights about requirements, evaluation criteria, target audience, and success metrics.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {analysisResult && analysis && (
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="requirements">Requirements</TabsTrigger>
+                <TabsTrigger value="criteria">Criteria</TabsTrigger>
+                <TabsTrigger value="audience">Audience</TabsTrigger>
+                <TabsTrigger value="insights">Insights</TabsTrigger>
+              </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Analysis Summary
+                    </CardTitle>
+                    <CardDescription>Comprehensive overview of the RFP</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none">
+                      <div className="whitespace-pre-wrap text-sm">{analysisResult}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <ListChecks className="h-4 w-4" />
+                        Key Highlights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{analysis.requirements.length} Requirements identified</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{analysis.criteria.length} Evaluation criteria found</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{analysis.audience.length} Audience segments defined</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{analysis.metrics.length} Success metrics specified</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Timeline
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium">Submission Deadline</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {selectedRFP.dueDate ? format(new Date(selectedRFP.dueDate), "MMM dd, yyyy") : "TBD"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Days Remaining</p>
+                          <p className="text-2xl font-bold">
+                            {selectedRFP.dueDate 
+                              ? Math.max(0, Math.ceil((new Date(selectedRFP.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* Requirements Tab */}
+              <TabsContent value="requirements" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      Key Requirements
+                    </CardTitle>
+                    <CardDescription>
+                      Essential requirements that must be addressed in the proposal
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.requirements.length > 0 ? (
+                      <ul className="space-y-3">
+                        {analysis.requirements.map((req, index) => (
+                          <li key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No specific requirements extracted. The analysis may need more detailed RFP content.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Criteria Tab */}
+              <TabsContent value="criteria" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      Evaluation Criteria
+                    </CardTitle>
+                    <CardDescription>
+                      How proposals will be evaluated and scored
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.criteria.length > 0 ? (
+                      <ul className="space-y-3">
+                        {analysis.criteria.map((criterion, index) => (
+                          <li key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                            <BarChart3 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{criterion}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No evaluation criteria extracted. The analysis may need more detailed RFP content.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Audience Tab */}
+              <TabsContent value="audience" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Target Audience
+                    </CardTitle>
+                    <CardDescription>
+                      Audience segments and demographics to target
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.audience.length > 0 ? (
+                      <ul className="space-y-3">
+                        {analysis.audience.map((segment, index) => (
+                          <li key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                            <Users className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{segment}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No audience information extracted. The analysis may need more detailed RFP content.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Insights Tab */}
+              <TabsContent value="insights" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5" />
+                      Strategic Insights
+                    </CardTitle>
+                    <CardDescription>
+                      AI-powered recommendations and strategic considerations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analysis.insights.length > 0 ? (
+                      <ul className="space-y-3">
+                        {analysis.insights.map((insight, index) => (
+                          <li key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                            <TrendingUp className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{insight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                          <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">
+                            Focus on demonstrating measurable ROI and past campaign success
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                          <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">
+                            Highlight your team's expertise in media planning and audience targeting
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                          <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">
+                            Provide detailed case studies that align with the client's industry
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Competitive Advantages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Emphasize unique value proposition
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Showcase relevant industry experience
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Demonstrate innovation and creativity
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Provide competitive pricing structure
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
