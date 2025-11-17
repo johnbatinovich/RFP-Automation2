@@ -30,6 +30,8 @@ export const rfps = mysqlTable("rfps", {
   owner: varchar("owner", { length: 255 }),
   rfpDocumentUrl: text("rfpDocumentUrl"),
   rfpDocumentName: varchar("rfpDocumentName", { length: 255 }),
+  rfpContent: text("rfpContent"),
+  uploadedBy: varchar("uploadedBy", { length: 255 }),
   extractedQuestions: text("extractedQuestions"),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),

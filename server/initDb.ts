@@ -26,6 +26,10 @@ async function initDatabase() {
         status VARCHAR(50) DEFAULT 'new',
         progress VARCHAR(10) DEFAULT '0',
         owner VARCHAR(255),
+        rfpDocumentUrl TEXT,
+        rfpDocumentName VARCHAR(255),
+        rfpContent TEXT,
+        uploadedBy VARCHAR(255),
         extractedQuestions TEXT,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

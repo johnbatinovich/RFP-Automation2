@@ -88,6 +88,22 @@ export default function RFPAnalyzer() {
     return result.value;
   };
 
+  const createRFP = trpc.rfps.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("RFP saved successfully!");
+      // Refetch RFPs to update the dropdown
+      rfpsQuery.refetch();
+      // Select the newly created RFP
+      setSelectedRfpId(data.id);
+      // Clear upload state
+      setUploadedFile(null);
+      setUploadedContent("");
+    },
+    onError: (error) => {
+      toast.error("Failed to save RFP: " + error.message);
+    },
+  });
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -109,6 +125,23 @@ export default function RFPAnalyzer() {
       }
       
       setUploadedContent(text);
+      
+      // Extract title from filename (remove extension)
+      const title = file.name.replace(/\.[^/.]+$/, "");
+      
+      // Save RFP to database
+      createRFP.mutate({
+        title,
+        company: "Uploaded Document", // Can be extracted from content later
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default: 30 days from now
+        value: "",
+        owner: "System",
+        status: "new",
+        rfpDocumentName: file.name,
+        rfpContent: text,
+        uploadedBy: "Current User", // Will be replaced with actual user when auth is implemented
+      });
+      
       toast.success(`File "${file.name}" uploaded and processed successfully`);
     } catch (error) {
       toast.error("Failed to read file: " + (error as Error).message);
