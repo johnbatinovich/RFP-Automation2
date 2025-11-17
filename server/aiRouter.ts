@@ -44,9 +44,10 @@ Provide the analysis in a clear, structured format.`
         };
       } catch (error) {
         console.error("Error analyzing document:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return {
           success: false,
-          error: "Failed to analyze document",
+          error: `Failed to analyze document: ${errorMessage}`,
         };
       }
     }),

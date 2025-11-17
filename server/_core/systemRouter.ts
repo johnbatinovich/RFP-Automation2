@@ -13,6 +13,17 @@ export const systemRouter = router({
       ok: true,
     })),
 
+  checkApiConfig: publicProcedure
+    .query(() => {
+      const { ENV } = require("./env");
+      return {
+        hasOpenAI: !!ENV.openaiApiKey && ENV.openaiApiKey.length > 0,
+        hasForge: !!ENV.forgeApiKey && ENV.forgeApiKey.length > 0,
+        openaiKeyLength: ENV.openaiApiKey ? ENV.openaiApiKey.length : 0,
+        openaiApiBase: ENV.openaiApiBase,
+      };
+    }),
+
   notifyOwner: adminProcedure
     .input(
       z.object({
