@@ -43,6 +43,11 @@ export const appRouter = router({
         dueDate: z.string(),
         value: z.string().optional(),
         owner: z.string().optional(),
+        rfpDocumentUrl: z.string().optional(),
+        rfpDocumentName: z.string().optional(),
+        rfpContent: z.string().optional(),
+        uploadedBy: z.string().optional(),
+        extractedQuestions: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const rfp = {
