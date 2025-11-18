@@ -130,10 +130,11 @@ export default function RFPAnalyzer() {
       const title = file.name.replace(/\.[^/.]+$/, "");
       
       // Save RFP to database
+      const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default: 30 days from now
       createRFP.mutate({
         title,
         company: "Uploaded Document", // Can be extracted from content later
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default: 30 days from now
+        dueDate: dueDate.toISOString(), // Convert Date to ISO string
         value: "",
         owner: "System",
         status: "new",
