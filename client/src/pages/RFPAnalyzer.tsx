@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,11 +46,19 @@ export default function RFPAnalyzer() {
     { enabled: selectedRfpId !== "select" }
   );
 
+  const [, navigate] = useLocation();
+
   const analyzeDocument = trpc.ai.analyzeDocument.useMutation({
     onSuccess: (result) => {
       if (result.success && result.analysis) {
         setAnalysisResult(result.analysis);
-        toast.success("Analysis complete!");
+        toast.success("Analysis complete! Redirecting to RFP details...");
+        // Navigate to the RFP detail page after a short delay
+        setTimeout(() => {
+          if (selectedRfpId && selectedRfpId !== "select") {
+            navigate(`/rfps/${selectedRfpId}`);
+          }
+        }, 1500);
       } else {
         toast.error(result.error || "Analysis failed");
       }
@@ -95,9 +104,8 @@ export default function RFPAnalyzer() {
       rfpsQuery.refetch();
       // Select the newly created RFP
       setSelectedRfpId(data.id);
-      // Clear upload state
-      setUploadedFile(null);
-      setUploadedContent("");
+      // Note: Don't clear upload state yet - we need it for analysis
+      // The analysis will navigate away, so no need to clear
     },
     onError: (error) => {
       toast.error("Failed to save RFP: " + error.message);
