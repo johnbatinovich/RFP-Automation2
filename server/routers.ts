@@ -9,6 +9,7 @@ import { aiRouter } from "./aiRouter";
 import { uploadsRouter } from "./uploadsRouter";
 import { dynamics365Router } from "./dynamics365Router";
 import { teamRouter } from "./teamRouter";
+import { healthRouter } from "./healthRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -255,6 +256,9 @@ Media Sales Team`;
 
   // Team Collaboration
   team: teamRouter,
+
+  // Health check and diagnostics
+  health: healthRouter,
 });
 
 export type AppRouter = typeof appRouter;

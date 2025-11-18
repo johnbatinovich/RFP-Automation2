@@ -45,9 +45,19 @@ Provide the analysis in a clear, structured format.`
       } catch (error) {
         console.error("Error analyzing document:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorStack = error instanceof Error ? error.stack : "No stack trace";
+        
+        // Log environment info for debugging
+        console.error("Environment check:", {
+          hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+          openAIKeyLength: process.env.OPENAI_API_KEY?.length || 0,
+          openAIBase: process.env.OPENAI_API_BASE || "not set",
+          hasForgeKey: !!process.env.BUILT_IN_FORGE_API_KEY,
+        });
+        
         return {
           success: false,
-          error: `Failed to analyze document: ${errorMessage}`,
+          error: `Failed to analyze document: ${errorMessage}. Stack: ${errorStack}`,
         };
       }
     }),

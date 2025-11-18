@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import TeamCollaboration from "./pages/TeamCollaboration";
 import QualityChecker from "./pages/QualityChecker";
 import RFPAnalyzer from "./pages/RFPAnalyzer";
+import HealthCheck from "./pages/HealthCheck";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
         <Route path={"/ai/generator"} component={ProposalGenerator} />
         <Route path={"/ai/quality"} component={QualityChecker} />
         <Route path={"/ai/collaboration"} component={TeamCollaboration} />
+        <Route path={"/health"} component={HealthCheck} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>
