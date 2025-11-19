@@ -41,6 +41,7 @@ export default function RFPAnalyzer() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedContent, setUploadedContent] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [createdRfpId, setCreatedRfpId] = useState<string | null>(null); // Track created RFP ID for redirect
 
   const { data: rfps } = trpc.rfps.list.useQuery();
   const { data: selectedRFP } = trpc.rfps.getById.useQuery(
@@ -57,8 +58,13 @@ export default function RFPAnalyzer() {
         toast.success("Analysis complete! Redirecting to RFP details...");
         // Navigate to the RFP detail page after a short delay
         setTimeout(() => {
-          if (selectedRfpId && selectedRfpId !== "select") {
-            navigate(`/rfps/${selectedRfpId}`);
+          // Use createdRfpId for uploaded documents, otherwise use selectedRfpId
+          const rfpIdToNavigate = createdRfpId || selectedRfpId;
+          if (rfpIdToNavigate && rfpIdToNavigate !== "select" && rfpIdToNavigate !== "uploaded") {
+            navigate(`/rfps/${rfpIdToNavigate}`);
+          } else {
+            console.error("No valid RFP ID to navigate to", { createdRfpId, selectedRfpId });
+            toast.error("Cannot navigate to RFP details - no valid ID");
           }
         }, 1500);
       } else {
@@ -104,7 +110,8 @@ export default function RFPAnalyzer() {
       toast.success("RFP saved successfully!");
       // Refetch RFPs to update the dropdown
       rfpsQuery.refetch();
-      // Select the newly created RFP
+      // Store the created RFP ID for redirect after analysis
+      setCreatedRfpId(data.id);
       setSelectedRfpId(data.id);
       // Note: Don't clear upload state yet - we need it for analysis
       // The analysis will navigate away, so no need to clear
@@ -167,6 +174,7 @@ export default function RFPAnalyzer() {
     setUploadedFile(null);
     setUploadedContent("");
     setAnalysisResult("");
+    setCreatedRfpId(null); // Clear created RFP ID
   };
 
   const handleAnalyzeUploadedFile = async () => {
@@ -284,12 +292,13 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <Select value={selectedRfpId} onValueChange={(value) => {
-                      setSelectedRfpId(value);
-                      setUploadedFile(null);
-                      setUploadedContent("");
-                      setAnalysisResult("");
-                    }}>
+                  <Select value={selectedRfpId} onValueChange={(value) => {
+                    setSelectedRfpId(value);
+                    setUploadedFile(null);
+                    setUploadedContent("");
+                    setAnalysisResult("");
+                    setCreatedRfpId(null); // Clear created RFP ID when selecting existing
+                  }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select an RFP to analyze" />
                       </SelectTrigger>
