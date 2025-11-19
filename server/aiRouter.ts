@@ -8,12 +8,14 @@ export const aiRouter = router({
     .input(z.object({
       rfpId: z.string(),
       content: z.string(),
+      model: z.string().optional(), // Optional AI model selection
     }))
     .mutation(async ({ input }) => {
       const { invokeLLM } = await import("./_core/llm");
       
       try {
         const response = await invokeLLM({
+          model: input.model, // Pass model selection to LLM
           messages: [
             {
               role: "system",

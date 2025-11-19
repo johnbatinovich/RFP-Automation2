@@ -57,6 +57,7 @@ export type ToolChoice =
 
 export type InvokeParams = {
   messages: Message[];
+  model?: string; // Optional model selection
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
@@ -236,12 +237,90 @@ const getApiKey = () => {
   return ENV.forgeApiKey;
 };
 
-const getModel = () => {
-  // Use GPT-4 for OpenAI, Gemini for Forge
+const getModel = (requestedModel?: string) => {
+  // If a specific model is requested, use it
+  if (requestedModel) {
+    return requestedModel;
+  }
+  
+  // Otherwise, use default based on available API keys
+  // Prefer OpenAI if configured
   if (ENV.openaiApiKey && ENV.openaiApiKey.trim().length > 0) {
     return "gpt-4o-mini";
   }
+  
+  // Fall back to Gemini via Forge
   return "gemini-2.5-flash";
+};
+
+// Helper to determine which API to use based on model
+const getApiInfoForModel = (model: string) => {
+  // OpenAI models
+  if (model.startsWith("gpt-") || model.startsWith("o1-")) {
+    if (!ENV.openaiApiKey) {
+      throw new Error("OPENAI_API_KEY is required for GPT models");
+    }
+    return {
+      url: `${ENV.openaiApiBase.replace(/\/$/, "")}/chat/completions`,
+      key: ENV.openaiApiKey,
+      provider: "openai" as const,
+    };
+  }
+  
+  // Anthropic Claude models
+  if (model.startsWith("claude-")) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is required for Claude models");
+    }
+    return {
+      url: "https://api.anthropic.com/v1/messages",
+      key: process.env.ANTHROPIC_API_KEY,
+      provider: "anthropic" as const,
+    };
+  }
+  
+  // xAI Grok models
+  if (model.startsWith("grok-")) {
+    if (!process.env.XAI_API_KEY) {
+      throw new Error("XAI_API_KEY is required for Grok models");
+    }
+    return {
+      url: "https://api.x.ai/v1/chat/completions",
+      key: process.env.XAI_API_KEY,
+      provider: "xai" as const,
+    };
+  }
+  
+  // Google Gemini models
+  if (model.startsWith("gemini-")) {
+    if (!process.env.GEMINI_API_KEY) {
+      // Fall back to Forge if Gemini API key not available
+      if (ENV.forgeApiKey) {
+        return {
+          url: `${ENV.forgeApiUrl || "https://forge.manus.im"}/v1/chat/completions`,
+          key: ENV.forgeApiKey,
+          provider: "forge" as const,
+        };
+      }
+      throw new Error("GEMINI_API_KEY or BUILT_IN_FORGE_API_KEY is required for Gemini models");
+    }
+    return {
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      key: process.env.GEMINI_API_KEY,
+      provider: "gemini" as const,
+    };
+  }
+  
+  // Default to Forge for unknown models
+  if (ENV.forgeApiKey) {
+    return {
+      url: `${ENV.forgeApiUrl || "https://forge.manus.im"}/v1/chat/completions`,
+      key: ENV.forgeApiKey,
+      provider: "forge" as const,
+    };
+  }
+  
+  throw new Error(`Unsupported model: ${model}. No API key configured.`);
 };
 
 const normalizeResponseFormat = ({
@@ -294,6 +373,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   const {
     messages,
+    model: requestedModel,
     tools,
     toolChoice,
     tool_choice,
@@ -303,8 +383,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
+  const model = getModel(requestedModel);
+  const apiInfo = getApiInfoForModel(model);
+
   const payload: Record<string, unknown> = {
-    model: getModel(),
+    model,
     messages: messages.map(normalizeMessage),
   };
 
@@ -320,14 +403,23 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  // GPT-4o-mini supports max 16384 completion tokens
-  payload.max_tokens = 16384;
-  
-  // Only add thinking for Gemini models
-  if (getModel().startsWith("gemini")) {
+  // Set max_tokens based on model
+  if (model.startsWith("gpt-4o-mini")) {
+    payload.max_tokens = 16384; // GPT-4o-mini limit
+  } else if (model.startsWith("gpt-")) {
+    payload.max_tokens = 16384; // Safe default for GPT models
+  } else if (model.startsWith("claude-")) {
+    payload.max_tokens = 8192; // Claude models
+  } else if (model.startsWith("grok-")) {
+    payload.max_tokens = 16384; // Grok models
+  } else if (model.startsWith("gemini-")) {
+    payload.max_tokens = 8192; // Gemini models
+    // Add thinking for Gemini models
     payload.thinking = {
       "budget_tokens": 128
     };
+  } else {
+    payload.max_tokens = 8192; // Safe default
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({
@@ -341,11 +433,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
+  const response = await fetch(apiInfo.url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${getApiKey()}`,
+      authorization: `Bearer ${apiInfo.key}`,
     },
     body: JSON.stringify(payload),
   });

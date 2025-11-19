@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import ModelSelector from "@/components/ModelSelector";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import { format } from "date-fns";
 
 export default function RFPAnalyzer() {
   const [selectedRfpId, setSelectedRfpId] = useState<string>("select");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-4o-mini");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -177,6 +179,7 @@ export default function RFPAnalyzer() {
     analyzeDocument.mutate({
       rfpId: "uploaded",
       content: uploadedContent,
+      model: selectedModel,
     });
   };
 
@@ -207,6 +210,7 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
     analyzeDocument.mutate({
       rfpId: selectedRfpId,
       content,
+      model: selectedModel,
     });
   };
 
@@ -277,30 +281,40 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
             </TabsList>
             
             <TabsContent value="existing" className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Select value={selectedRfpId} onValueChange={(value) => {
-                    setSelectedRfpId(value);
-                    setUploadedFile(null);
-                    setUploadedContent("");
-                    setAnalysisResult("");
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an RFP to analyze" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="select">Select an RFP</SelectItem>
-                      {rfps?.map((rfp) => (
-                        <SelectItem key={rfp.id} value={rfp.id}>
-                          {rfp.title} - {rfp.company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Select value={selectedRfpId} onValueChange={(value) => {
+                      setSelectedRfpId(value);
+                      setUploadedFile(null);
+                      setUploadedContent("");
+                      setAnalysisResult("");
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an RFP to analyze" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="select">Select an RFP</SelectItem>
+                        {rfps?.map((rfp) => (
+                          <SelectItem key={rfp.id} value={rfp.id}>
+                            {rfp.title} - {rfp.company}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
+                <ModelSelector
+                  value={selectedModel}
+                  onValueChange={setSelectedModel}
+                  disabled={isAnalyzing}
+                />
+                
                 <Button
                   onClick={handleAnalyze}
                   disabled={selectedRfpId === "select" || isAnalyzing}
+                  className="w-full"
                 >
                   {isAnalyzing ? (
                     <>
@@ -366,6 +380,13 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  <ModelSelector
+                    value={selectedModel}
+                    onValueChange={setSelectedModel}
+                    disabled={isAnalyzing}
+                  />
+                  
                   <Button
                     onClick={handleAnalyzeUploadedFile}
                     disabled={isAnalyzing}
