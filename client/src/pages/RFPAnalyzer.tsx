@@ -183,9 +183,14 @@ export default function RFPAnalyzer() {
       return;
     }
 
+    if (!createdRfpId) {
+      toast.error("RFP not created yet. Please wait and try again.");
+      return;
+    }
+
     setIsAnalyzing(true);
     analyzeDocument.mutate({
-      rfpId: "uploaded",
+      rfpId: createdRfpId, // Use the actual created RFP ID
       content: uploadedContent,
       model: selectedModel,
     });
@@ -398,7 +403,7 @@ This is a media advertising RFP that requires a comprehensive proposal covering 
                   
                   <Button
                     onClick={handleAnalyzeUploadedFile}
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || !createdRfpId}
                     className="w-full"
                   >
                     {isAnalyzing ? (
