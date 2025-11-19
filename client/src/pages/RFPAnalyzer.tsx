@@ -43,7 +43,8 @@ export default function RFPAnalyzer() {
   const [isUploading, setIsUploading] = useState(false);
   const [createdRfpId, setCreatedRfpId] = useState<string | null>(null); // Track created RFP ID for redirect
 
-  const { data: rfps } = trpc.rfps.list.useQuery();
+  const rfpsQuery = trpc.rfps.list.useQuery();
+  const { data: rfps } = rfpsQuery;
   const { data: selectedRFP } = trpc.rfps.getById.useQuery(
     { id: selectedRfpId },
     { enabled: selectedRfpId !== "select" }
@@ -107,17 +108,20 @@ export default function RFPAnalyzer() {
 
   const createRFP = trpc.rfps.create.useMutation({
     onSuccess: (data) => {
+      console.log("RFP created with ID:", data.id);
       toast.success("RFP saved successfully!");
       // Refetch RFPs to update the dropdown
       rfpsQuery.refetch();
       // Store the created RFP ID for redirect after analysis
       setCreatedRfpId(data.id);
       setSelectedRfpId(data.id);
+      console.log("Set createdRfpId to:", data.id);
       // Note: Don't clear upload state yet - we need it for analysis
       // The analysis will navigate away, so no need to clear
     },
     onError: (error) => {
       toast.error("Failed to save RFP: " + error.message);
+      console.error("RFP creation error:", error);
     },
   });
 
@@ -185,8 +189,10 @@ export default function RFPAnalyzer() {
 
     // Use createdRfpId if available, otherwise use selectedRfpId
     const rfpId = createdRfpId || selectedRfpId;
+    console.log("Analyzing with RFP ID:", rfpId, { createdRfpId, selectedRfpId });
     
     if (!rfpId || rfpId === "select") {
+      console.error("No valid RFP ID", { rfpId, createdRfpId, selectedRfpId });
       toast.error("RFP not created yet. Please wait and try again.");
       return;
     }
