@@ -154,7 +154,7 @@ export default function RFPAnalyzer() {
         title,
         company: "Uploaded Document", // Can be extracted from content later
         dueDate: dueDate.toISOString(), // Convert Date to ISO string
-        value: "",
+        // Don't send value field if empty - let it be NULL in database
         owner: "System",
         rfpDocumentName: file.name,
         rfpContent: text,
