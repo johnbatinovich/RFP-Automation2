@@ -156,7 +156,6 @@ export default function RFPAnalyzer() {
         dueDate: dueDate.toISOString(), // Convert Date to ISO string
         value: "",
         owner: "System",
-        status: "new",
         rfpDocumentName: file.name,
         rfpContent: text,
         uploadedBy: "Current User", // Will be replaced with actual user when auth is implemented
