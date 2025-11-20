@@ -50,6 +50,7 @@ export const appRouter = router({
         extractedQuestions: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        console.log("[createRFP] Received input:", input);
         const rfp = {
           id: randomUUID(),
           ...input,
@@ -57,6 +58,8 @@ export const appRouter = router({
           status: "new" as const,
           progress: "0",
         };
+        console.log("[createRFP] Prepared RFP data:", rfp);
+        console.log("[createRFP] dueDate type:", typeof rfp.dueDate, rfp.dueDate);
         return await db.createRFP(rfp);
       }),
     
