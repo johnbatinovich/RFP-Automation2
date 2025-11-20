@@ -110,14 +110,12 @@ export default function RFPAnalyzer() {
     onSuccess: (data) => {
       console.log("RFP created with ID:", data.id);
       toast.success("RFP saved successfully!");
-      // Refetch RFPs to update the dropdown
-      rfpsQuery.refetch();
       // Store the created RFP ID for redirect after analysis
       setCreatedRfpId(data.id);
       setSelectedRfpId(data.id);
       console.log("Set createdRfpId to:", data.id);
-      // Note: Don't clear upload state yet - we need it for analysis
-      // The analysis will navigate away, so no need to clear
+      // Note: tRPC will automatically invalidate/refetch queries
+      // Don't manually refetch to avoid infinite loops
     },
     onError: (error) => {
       toast.error("Failed to save RFP: " + error.message);
