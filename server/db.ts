@@ -1,9 +1,11 @@
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from 'mysql2/promise';
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -16,6 +18,19 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+// Get raw mysql2 connection pool
+export async function getPool() {
+  if (!_pool && process.env.DATABASE_URL) {
+    try {
+      _pool = mysql.createPool(process.env.DATABASE_URL);
+    } catch (error) {
+      console.warn("[Database] Failed to create pool:", error);
+      _pool = null;
+    }
+  }
+  return _pool;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -90,28 +105,29 @@ import { analytics, InsertAnalytics, InsertKnowledgeBase, InsertProposal, Insert
 import { desc } from "drizzle-orm";
 
 export async function createRFP(data: InsertRFP) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  const pool = await getPool();
+  if (!pool) throw new Error("Database not available");
   
-  // Use raw SQL to avoid Drizzle adding 'default' for undefined fields
+  // Use raw SQL with mysql2 to avoid Drizzle adding 'default' for undefined fields
   const fields = Object.keys(data);
   const fieldNames = fields.map(f => `\`${f}\``).join(', ');
+  const placeholders = fields.map(() => '?').join(', ');
   const values = fields.map(f => (data as any)[f]);
   
-  // Build SQL with proper parameter binding
-  const placeholders = values.map((v, i) => sql`${v}`).reduce((acc, curr, i) => {
-    if (i === 0) return curr;
-    return sql`${acc}, ${curr}`;
-  });
-  
-  const query = sql.raw(`INSERT INTO \`rfps\` (${fieldNames}) VALUES (`);
-  const fullQuery = sql`${query}${placeholders}${sql.raw(')')}`;
+  const query = `INSERT INTO \`rfps\` (${fieldNames}) VALUES (${placeholders})`;
   
   console.log("[createRFP] Inserting fields:", fields);
+  console.log("[createRFP] SQL:", query);
   console.log("[createRFP] Values:", values);
   
-  await db.execute(fullQuery);
-  return data;
+  try {
+    await pool.execute(query, values);
+    console.log("[createRFP] INSERT successful");
+    return data;
+  } catch (error) {
+    console.error("[createRFP] INSERT failed:", error);
+    throw error;
+  }
 }
 
 export async function getAllRFPs() {
