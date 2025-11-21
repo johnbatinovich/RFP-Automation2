@@ -53,11 +53,15 @@ export const appRouter = router({
         console.log("[createRFP] Received input:", input);
         
         // Build RFP object with only defined fields to avoid database "default" errors
+        // Convert dueDate to MySQL timestamp format (YYYY-MM-DD HH:MM:SS)
+        const dueDateObj = new Date(input.dueDate);
+        const mysqlTimestamp = dueDateObj.toISOString().slice(0, 19).replace('T', ' ');
+        
         const rfp: any = {
           id: randomUUID(),
           title: input.title,
           company: input.company,
-          dueDate: new Date(input.dueDate),
+          dueDate: mysqlTimestamp,
           status: "new" as const,
           progress: "0",
         };
