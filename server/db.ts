@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -95,15 +95,22 @@ export async function createRFP(data: InsertRFP) {
   
   // Use raw SQL to avoid Drizzle adding 'default' for undefined fields
   const fields = Object.keys(data);
-  const placeholders = fields.map(() => '?').join(', ');
   const fieldNames = fields.map(f => `\`${f}\``).join(', ');
   const values = fields.map(f => (data as any)[f]);
   
-  const sql = `INSERT INTO \`rfps\` (${fieldNames}) VALUES (${placeholders})`;
-  console.log("[createRFP] Raw SQL:", sql);
+  // Build SQL with proper parameter binding
+  const placeholders = values.map((v, i) => sql`${v}`).reduce((acc, curr, i) => {
+    if (i === 0) return curr;
+    return sql`${acc}, ${curr}`;
+  });
+  
+  const query = sql.raw(`INSERT INTO \`rfps\` (${fieldNames}) VALUES (`);
+  const fullQuery = sql`${query}${placeholders}${sql.raw(')')}`;
+  
+  console.log("[createRFP] Inserting fields:", fields);
   console.log("[createRFP] Values:", values);
   
-  await db.execute(sql, values);
+  await db.execute(fullQuery);
   return data;
 }
 
