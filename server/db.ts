@@ -92,7 +92,18 @@ import { desc } from "drizzle-orm";
 export async function createRFP(data: InsertRFP) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(rfps).values(data);
+  
+  // Use raw SQL to avoid Drizzle adding 'default' for undefined fields
+  const fields = Object.keys(data);
+  const placeholders = fields.map(() => '?').join(', ');
+  const fieldNames = fields.map(f => `\`${f}\``).join(', ');
+  const values = fields.map(f => (data as any)[f]);
+  
+  const sql = `INSERT INTO \`rfps\` (${fieldNames}) VALUES (${placeholders})`;
+  console.log("[createRFP] Raw SQL:", sql);
+  console.log("[createRFP] Values:", values);
+  
+  await db.execute(sql, values);
   return data;
 }
 
