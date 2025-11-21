@@ -52,23 +52,27 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         console.log("[createRFP] Received input:", input);
         
-        // Filter out undefined values to avoid database errors
-        const cleanedInput: any = {};
-        Object.keys(input).forEach(key => {
-          if (input[key as keyof typeof input] !== undefined) {
-            cleanedInput[key] = input[key as keyof typeof input];
-          }
-        });
-        
-        const rfp = {
+        // Build RFP object with only defined fields to avoid database "default" errors
+        const rfp: any = {
           id: randomUUID(),
-          ...cleanedInput,
+          title: input.title,
+          company: input.company,
           dueDate: new Date(input.dueDate),
           status: "new" as const,
           progress: "0",
         };
+        
+        // Only add optional fields if they have actual values
+        if (input.value !== undefined) rfp.value = input.value;
+        if (input.owner !== undefined) rfp.owner = input.owner;
+        if (input.rfpDocumentUrl !== undefined) rfp.rfpDocumentUrl = input.rfpDocumentUrl;
+        if (input.rfpDocumentName !== undefined) rfp.rfpDocumentName = input.rfpDocumentName;
+        if (input.rfpContent !== undefined) rfp.rfpContent = input.rfpContent;
+        if (input.uploadedBy !== undefined) rfp.uploadedBy = input.uploadedBy;
+        if (input.extractedQuestions !== undefined) rfp.extractedQuestions = input.extractedQuestions;
+        
         console.log("[createRFP] Prepared RFP data:", rfp);
-        console.log("[createRFP] dueDate type:", typeof rfp.dueDate, rfp.dueDate);
+        console.log("[createRFP] Fields included:", Object.keys(rfp));
         return await db.createRFP(rfp);
       }),
     
