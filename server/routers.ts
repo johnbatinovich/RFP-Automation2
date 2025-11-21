@@ -51,9 +51,18 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         console.log("[createRFP] Received input:", input);
+        
+        // Filter out undefined values to avoid database errors
+        const cleanedInput: any = {};
+        Object.keys(input).forEach(key => {
+          if (input[key as keyof typeof input] !== undefined) {
+            cleanedInput[key] = input[key as keyof typeof input];
+          }
+        });
+        
         const rfp = {
           id: randomUUID(),
-          ...input,
+          ...cleanedInput,
           dueDate: new Date(input.dueDate),
           status: "new" as const,
           progress: "0",
