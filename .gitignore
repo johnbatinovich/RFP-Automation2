@@ -1,6 +1,7 @@
 # Dependencies
 **/node_modules
 .pnpm-store/
+.local/
 
 # Build outputs
 dist/
@@ -122,4 +123,12 @@ rfp_automation_analysis.md
 dynamics365_integration_notes.md
 architecture.mmd
 architecture.png
+# System and user-specific files
 .bash_history
+.bash_logout
+.bashrc
+.profile
+.zshrc
+.nvm
+.pki/
+Downloads/
